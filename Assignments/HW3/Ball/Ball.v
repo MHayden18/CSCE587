@@ -40,8 +40,8 @@ module Ball(
 	
 	
 	// Ball signal declarations:
-	reg [9:0] ball_hpos;	// ball current X position
-	reg [9:0] ball_vpos;	// ball current Y position
+	reg [9:0] ball_xPos;	// ball current X position
+	reg [9:0] ball_yPos;	// ball current Y position
   
 	reg [9:0] ball_xVel = 2;	// ball current X velocity
 	reg [9:0] ball_yVel = 2;		// ball current Y velocity
@@ -53,7 +53,8 @@ module Ball(
 	localparam BALL_SIZE = 4;		// ball size (in pixels)
 	
 	// Ball directions:
-	reg ball_y_sign, ball_x_sign;
+	reg ball_y_sign = 1'b1;
+	reg ball_x_sign = 1'b1;
 	
    vga640x480_sync_gen video_gen(
       .clk(clk),
@@ -79,50 +80,37 @@ module Ball(
 	// Initial State:
 		if (reset) begin
 			// reset ball position to center
-			ball_hpos <= ball_horiz_initial;
-			ball_vpos <= ball_vert_initial;
+			ball_xPos <= ball_horiz_initial;
+			ball_yPos <= ball_vert_initial;
 		end else begin
 	// add velocity vector to ball position
-			if (ball_x_sign) begin
-				ball_hpos <= ball_hpos + ball_xVel;
-			end else  begin
-				ball_hpos <= ball_hpos - ball_xVel;
-			end
-			if (ball_y_sign) begin
-				ball_vpos <= ball_vpos + ball_yVel;
-			end else begin
-				ball_vpos <= ball_vpos - ball_yVel;
-			end
+			if (ball_x_sign)
+				ball_xPos <= ball_xPos + ball_xVel;
+			else
+				ball_xPos <= ball_xPos - ball_xVel;
+		
+			if (ball_y_sign)
+				ball_yPos <= ball_yPos + ball_yVel;
+			else
+				ball_yPos <= ball_yPos - ball_yVel;
+	// Update signs based on collisions:
+			if (ball_yPos >= 480 - BALL_SIZE)
+				ball_y_sign <= 1'b0;
+			if (ball_yPos + ball_yVel <= BALL_SIZE)
+				ball_y_sign <= 1'b1;
+			if (ball_xPos >= 640 - BALL_SIZE) 
+				ball_x_sign <= 1'b0;
+			if (ball_xPos + ball_xVel <= BALL_SIZE)
+				ball_x_sign <= 1'b1;
 		end
 	end
-
-	
-// Collisions:
-	// vertical bounce
-	always @(posedge ball_vert_collide)
-	begin
-		ball_y_sign <= ~ball_y_sign;
-	end
-
-	
-	// horizontal bounce
-	always @(posedge ball_horiz_collide)
-	begin
-		ball_x_sign <= ~ball_x_sign;
-	end
-  
-
-   // collide with vertical and horizontal boundaries
-	// these are set when the ball touches a border
-	wire ball_vert_collide = (ball_vpos >= 480 - BALL_SIZE);
-	wire ball_horiz_collide = (ball_hpos >= 640 - BALL_SIZE);
 	
 	
 // Graphics:
 
 	// offset of ball position from video beam
-	wire [9:0] ball_hdiff = hpos - ball_hpos;
-	wire [9:0] ball_vdiff = vpos - ball_vpos;
+	wire [9:0] ball_hdiff = hpos - ball_xPos;
+	wire [9:0] ball_vdiff = vpos - ball_yPos;
 
 	
 	// ball graphics output

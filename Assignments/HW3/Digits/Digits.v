@@ -114,24 +114,20 @@ module Digits(
 
    // create VGA sync generator
    wire display_on;
-   wire [9:0] hpos_out, hpos, vpos_out, vpos;
+   wire [9:0] hpos, vpos;
    vga640x480_sync_gen video_gen(
       .clk(clk),
       .reset(0),
       .hsync(VGA_HS),
       .vsync(VGA_VS),
       .display_on(display_on),
-      .hpos(hpos_out),
-      .vpos(vpos_out)
+      .hpos(hpos),
+      .vpos(vpos)
    );
    assign VGA_CLK = clk;              // clock DAC
    assign VGA_BLANK_n = display_on;   // enable DAC output
    assign VGA_SYNC_n  = (VGA_VS || VGA_HS);         // turn off "green" mode
 
-	
-	// Adjust output to match offsets:
-	assign hpos = hpos_out - 144;
-	assign vpos = vpos_out - 35;
 	
 	
 	// Digits Code:
@@ -151,9 +147,6 @@ module Digits(
 
 	assign outbits = {bits, 3'b000};
 	
-	// draw a box (0-639, 0-479)
-   //wire r = (hpos==0)|| (hpos==639) || (vpos==0) || (vpos==479) || (display_on && 0);
-   
 	wire r = display_on && 0;
 	wire g = display_on && outbits[xofs ^ 3'b111];
 	wire b = display_on && 0;

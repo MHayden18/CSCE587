@@ -36,7 +36,7 @@ module TestPattern(
 	// Display Signals:
 	wire r,g,b;
    wire display_on;
-   wire [9:0] hpos, vpos, hpos_out, vpos_out;
+   wire [9:0] hpos, vpos;
 	
    vga640x480_sync_gen video_gen(
       .clk(clk),
@@ -44,18 +44,14 @@ module TestPattern(
       .hsync(VGA_HS),
       .vsync(VGA_VS),
       .display_on(display_on),
-      .hpos(hpos_out),
-      .vpos(vpos_out)
+      .hpos(hpos),
+      .vpos(vpos)
    );
 	
    assign VGA_CLK = clk;              				// clock DAC
    assign VGA_BLANK_n = display_on;   				// enable DAC output
    assign VGA_SYNC_n  = (VGA_HS || VGA_VS); 		// turn off "green" mode
 		
-	
-	// Adjust output to expected:
-	assign hpos = hpos_out - 144;
-	assign vpos = vpos_out - 35;
 	  
 	// draw a box (0-639, 0-479)
    //assign r = display_on && ((hpos==0) || (hpos==639) || (vpos==0) || (vpos==479));
