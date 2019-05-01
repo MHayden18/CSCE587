@@ -5,18 +5,20 @@ module Ball(
      // inputs
      KEY, OSC_50_B3B, SW,
      // outputs
-     LED, 
-     VGA_R, VGA_G, VGA_B,
+     LED,
+	  VGA_R, VGA_G, VGA_B,
      VGA_HS, VGA_VS,
      VGA_CLK, VGA_BLANK_n, VGA_SYNC_n
    );
 
-   // inputs
-   input [3:0] KEY;
+   // inputsk
+	input [3:0] KEY;
+	input [3:0] SW;
+	
    input OSC_50_B3B;
-   input [3:0] SW;
+	
    // outputs
-   output [3:0] LED;
+	output [3:0] LED;
    output [7:0] VGA_R;
    output [7:0] VGA_G;
    output [7:0] VGA_B;
@@ -33,81 +35,100 @@ module Ball(
 
    // create VGA sync generator
    wire display_on;
-   wire [9:0] hpos, vpos, hpos_out, vpos_out;
+   wire [9:0] hpos, vpos;
+	wire reset;
+	
 	
 	// Ball signal declarations:
 	reg [9:0] ball_hpos;	// ball current X position
 	reg [9:0] ball_vpos;	// ball current Y position
   
-	reg [9:0] ball_horiz_move = -2;	// ball current X velocity
-	reg [9:0] ball_vert_move = 2;		// ball current Y velocity
+	reg [9:0] ball_xVel = 2;	// ball current X velocity
+	reg [9:0] ball_yVel = 2;		// ball current Y velocity
   
+
 	localparam ball_horiz_initial = 130;	// ball initial X position
 	localparam ball_vert_initial = 130;	// ball initial Y position
   
 	localparam BALL_SIZE = 4;		// ball size (in pixels)
 	
+	// Ball directions:
+	reg ball_y_sign, ball_x_sign;
+	
    vga640x480_sync_gen video_gen(
       .clk(clk),
-      .reset(0),
+      .reset(reset),
       .hsync(VGA_HS),
       .vsync(VGA_VS),
       .display_on(display_on),
-      .hpos(hpos_out),
-      .vpos(vpos_out)
+      .hpos(hpos),
+      .vpos(vpos)
    );
 	
    assign VGA_CLK = clk;              // clock DAC
    assign VGA_BLANK_n = display_on;   // enable DAC output
    assign VGA_SYNC_n  = (VGA_HS || VGA_VS);         // turn off "green" mode
-	wire reset = 1'b0;
-	
-	// Adjust outputs based on offsets:
-	assign hpos = hpos_out - 144;
-	assign vpos = vpos_out - 35;
+	assign reset = ~KEY[0];
 
 	
-	// Ball code here:
+// Ball code here:
 	
-	// update horizontal timer
+	// Ball Velocities:
 	always @(posedge VGA_VS or posedge reset)
 	begin
+	// Initial State:
 		if (reset) begin
 			// reset ball position to center
 			ball_hpos <= ball_horiz_initial;
 			ball_vpos <= ball_vert_initial;
 		end else begin
-			// add velocity vector to ball position
-			ball_hpos <= ball_hpos + ball_horiz_move;
-			ball_vpos <= ball_vpos + ball_vert_move;
+	// add velocity vector to ball position
+			if (ball_x_sign) begin
+				ball_hpos <= ball_hpos + ball_xVel;
+			end else  begin
+				ball_hpos <= ball_hpos - ball_xVel;
+			end
+			if (ball_y_sign) begin
+				ball_vpos <= ball_vpos + ball_yVel;
+			end else begin
+				ball_vpos <= ball_vpos - ball_yVel;
+			end
 		end
 	end
 
+	
+// Collisions:
 	// vertical bounce
 	always @(posedge ball_vert_collide)
 	begin
-		ball_vert_move <= -ball_vert_move;
+		ball_y_sign <= ~ball_y_sign;
 	end
 
+	
 	// horizontal bounce
 	always @(posedge ball_horiz_collide)
 	begin
-		ball_horiz_move <= -ball_horiz_move;
+		ball_x_sign <= ~ball_x_sign;
 	end
   
+
+   // collide with vertical and horizontal boundaries
+	// these are set when the ball touches a border
+	wire ball_vert_collide = (ball_vpos >= 480 - BALL_SIZE);
+	wire ball_horiz_collide = (ball_hpos >= 640 - BALL_SIZE);
+	
+	
+// Graphics:
+
 	// offset of ball position from video beam
 	wire [9:0] ball_hdiff = hpos - ball_hpos;
 	wire [9:0] ball_vdiff = vpos - ball_vpos;
 
+	
 	// ball graphics output
 	wire ball_hgfx = ball_hdiff < BALL_SIZE;
 	wire ball_vgfx = ball_vdiff < BALL_SIZE;
 	wire ball_gfx = ball_hgfx && ball_vgfx;
-
-	// collide with vertical and horizontal boundaries
-	// these are set when the ball touches a border
-	wire ball_vert_collide = (ball_vpos >= 480 - BALL_SIZE);
-	wire ball_horiz_collide = (ball_hpos >= 640 - BALL_SIZE);
 
 		
 	// combine signals to RGB output
@@ -122,13 +143,11 @@ module Ball(
    assign VGA_G = {8{g}};
    assign VGA_B = {8{b}};
 
-//   assign VGA_R = SW[0] ? {8{1'b1}} : {8{1'b0}};
-//   assign VGA_G = SW[1] ? {8{1'b1}} : {8{1'b0}};
-//   assign VGA_B = SW[2] ? {8{1'b1}} : {8{1'b0}};
-
-   assign LED[0] = ~KEY[0];
-   assign LED[1] = ~KEY[1];
+	
+// Assignments:
+	assign LED[0] = SW[0] && SW[1] && SW[2] && SW[3];
+	assign LED[1] = ~KEY[1];
    assign LED[2] = ~KEY[2];
    assign LED[3] = ~KEY[3];
-
+	
 endmodule

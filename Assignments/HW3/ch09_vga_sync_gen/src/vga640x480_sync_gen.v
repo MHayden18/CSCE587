@@ -1,3 +1,4 @@
+
 `ifndef VGA640x480_SYNC_GENERATOR
 `define VGA640x480_SYNC_GENERATOR
 
@@ -27,7 +28,7 @@ module vga640x480_sync_gen(
   output display_on;
   output reg [9:0] hpos = 10'b0;
   output reg [9:0] vpos = 10'b0;
-  
+
   // horizontal constants
   parameter H_DISPLAY       = 640; // horizontal display width
   parameter H_BACK          =  48; // horizontal left border (back porch)
@@ -40,19 +41,13 @@ module vga640x480_sync_gen(
   parameter V_SYNC          =   2; // vertical sync # lines
 
   // derived constants
-  parameter H_SYNC_START    = 0; //H_DISPLAY + H_FRONT;
-  parameter H_SYNC_END      = H_SYNC - 1; //H_DISPLAY + H_FRONT + H_SYNC - 1;
-  parameter H_START			 = H_SYNC + H_BACK;
-  parameter H_END				 = H_START + H_DISPLAY - 1;
+  parameter H_SYNC_START    = H_DISPLAY + H_FRONT;
+  parameter H_SYNC_END      = H_DISPLAY + H_FRONT + H_SYNC - 1;
   parameter H_MAX           = H_DISPLAY + H_BACK + H_FRONT + H_SYNC - 1;
-  
-  parameter V_SYNC_START    = 0; //V_DISPLAY + V_BOTTOM;
-  parameter V_SYNC_END      = V_SYNC - 1; //V_DISPLAY + V_BOTTOM + V_SYNC - 1;
-  parameter V_START 			 = V_SYNC + V_BOTTOM;
-  parameter V_END			  	 = V_START + V_DISPLAY - 1;
+  parameter V_SYNC_START    = V_DISPLAY + V_BOTTOM;
+  parameter V_SYNC_END      = V_DISPLAY + V_BOTTOM + V_SYNC - 1;
   parameter V_MAX           = V_DISPLAY + V_TOP + V_BOTTOM + V_SYNC - 1;
-  
-  
+
   wire hmaxxed = (hpos == H_MAX) || reset;	// set when hpos is maximum
   wire vmaxxed = (vpos == V_MAX) || reset;	// set when vpos is maximum
   
@@ -78,7 +73,7 @@ module vga640x480_sync_gen(
   end
   
   // display_on is set when beam is active display area
-  assign display_on = (hpos >= H_START) && (hpos <= H_END) && (vpos >= V_START) && (vpos <= V_END);
+  assign display_on = (hpos<H_DISPLAY) && (vpos<V_DISPLAY);
 
 endmodule
 
