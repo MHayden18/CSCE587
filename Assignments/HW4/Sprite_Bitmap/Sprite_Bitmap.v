@@ -101,7 +101,7 @@ module Sprite_Bitmap(
     .bits(car_sprite_bits));
 	
 	// start Y counter when we hit the top border (player_y)
-	always @(posedge VGA_VS)
+	always @(posedge VGA_HS)
 		if (vpos == player_y)
 			car_sprite_yofs <= 15;
 		else if (car_sprite_yofs != 0)

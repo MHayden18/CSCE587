@@ -55,8 +55,8 @@ module Sprite_Render(
 	
 	assign h_dir = SW[3];
 	assign v_dir = SW[0];
-	assign hpaddle = KEY[3];
-	assign vpaddle = KEY[0];
+	assign hpaddle = ~KEY[3];
+	assign vpaddle = ~KEY[0];
 	
 	// player position
 	reg [9:0] player_x;
@@ -97,15 +97,15 @@ module Sprite_Render(
 		begin
 			if (hpaddle) begin
 				if (h_dir)
-					paddle_x <= paddle_x + 10;
+					paddle_x <= paddle_x + 2;
 				else
-					paddle_x <= paddle_x - 10;
+					paddle_x <= paddle_x - 2;
 			end
 			if (vpaddle) begin
 				if (v_dir)
-					paddle_y <= paddle_y + 10;
+					paddle_y <= paddle_y + 2;
 				else
-					paddle_y <= paddle_y - 10;
+					paddle_y <= paddle_y - 2;
 			end
 			// See if paddle exceeds bounds:
 			if (paddle_x < 0)
