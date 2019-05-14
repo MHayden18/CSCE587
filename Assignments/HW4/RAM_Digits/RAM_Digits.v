@@ -95,16 +95,16 @@ module RAM_Digits(
 	
  // increment the current RAM cell
   always @(posedge clk)
-		case (hpos[4:2])
+		case (hpos[3:0])
 			// on 7th pixel of cell
-			6: begin
+			8: begin
 				// increment RAM cell
 				ram_write <= (ram_read + 1);
 				// only enable write on last scanline of cell
 				ram_writeenable <= (vpos[4:2] == 7);
 			end
 			// on 8th pixel of cell
-			7: begin
+			9: begin
 				// disable write
 				ram_writeenable <= 0;
 			end
