@@ -66,6 +66,15 @@ module RAM_Digits(
    assign VGA_BLANK_n = display_on;   // enable DAC output
    assign VGA_SYNC_n  = (VGA_VS || VGA_HS);         // turn off "green" mode
 
+	wire [7:0] lfsr;
+	wire ram_init, reset;
+	 // LFSR 
+	LFSR #(8'b11010101,0) lfsr_gen(
+    .clk(clk),
+    .reset(reset),
+    .enable(ram_init),
+    .lfsr(lfsr));
+	 
 	// ROM/Digits Conversion:
 	
 	wire [7:0] outbits;
@@ -74,7 +83,7 @@ module RAM_Digits(
 	wire [2:0] rom_yofs = vpos[4:2]; // scanline of cell
 	wire [4:0] rom_bits;		   // 5 pixels per scanline
   
-	wire [3:0] digit = ram_read[3:0]; // read digit from RAM
+	wire [3:0] digit = ram_read[5:2]; // read digit from RAM
 	wire [2:0] xofs = hpos[4:2];      // which pixel to draw (0-7)
   
 	assign ram_addr = {row,col};	// 10-bit RAM address
@@ -95,16 +104,20 @@ module RAM_Digits(
 	
  // increment the current RAM cell
   always @(posedge clk)
-		case (hpos[3:0])
+		case (hpos[4:2])
 			// on 7th pixel of cell
-			8: begin
+			6: begin
 				// increment RAM cell
-				ram_write <= (ram_read + 1);
+				if (ram_init)
+					ram_write <= (ram_read + lfsr);
+				else
+					ram_write <= (ram_read + 1);
+				
 				// only enable write on last scanline of cell
 				ram_writeenable <= (vpos[4:2] == 7);
 			end
 			// on 8th pixel of cell
-			9: begin
+			7: begin
 				// disable write
 				ram_writeenable <= 0;
 			end
@@ -120,6 +133,8 @@ module RAM_Digits(
    assign LED[0] = ~KEY[0];
    assign LED[1] = ~KEY[1];
    assign LED[2] = ~KEY[2];
-   assign LED[3] = ~KEY[3];
-
+   
+	assign reset = ~KEY[3];
+	assign ram_init = SW[0];
+	
 endmodule
