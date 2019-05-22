@@ -98,23 +98,25 @@ module Racing(
 			IN_HPOS:  to_cpu = hpos[7:0];
 			IN_VPOS:  to_cpu = vpos[7:0];
 			IN_FLAGS: to_cpu = {2'b0, frame_collision,
-								vsync, hsync, vpaddle, hpaddle, display_on};
+								VGA_VS, VGA_HS, vpaddle, hpaddle, display_on};
 			// ROM
 			8'b1???????: to_cpu = rom[address_bus[6:0]];
 			default: to_cpu = 8'bxxxxxxxx;
 		endcase
 
-	// sync generator module
-	hvsync_generator hvsync_gen(
+	// create VGA sync generator
+	wire display_on;
+	wire [9:0] hpos, vpos;
+	vga640x480_sync_gen video_gen(
 		.clk(clk),
 		.reset(0),
-		.hsync(hsync),
-		.vsync(vsync),
+		.hsync(VGA_HS),
+		.vsync(VGA_VS),
 		.display_on(display_on),
 		.hpos(hpos),
 		.vpos(vpos)
 	);
-  
+	
 	// flags for player sprite renderer module
 	wire player_vstart = {1'b0,ram[PLAYER_Y]} == vpos;
 	wire player_hstart = {1'b0,ram[PLAYER_X]} == hpos;
@@ -130,6 +132,7 @@ module Racing(
 	// select player or enemy access to ROM
 	wire player_load = (hpos >= 256) && (hpos < 260);
 	wire enemy_load = (hpos >= 260);
+	
 	// wire up car sprite ROM
 	// multiplex between player and enemy ROM address
 	wire [3:0] player_sprite_yofs;
@@ -179,112 +182,18 @@ module Racing(
 	wire r = display_on && (player_gfx || enemy_gfx || track_shoulder);
 	wire g = display_on && (player_gfx || track_gfx);
 	wire b = display_on && (enemy_gfx || track_shoulder);
-	assign rgb = {1'b0,b,g,r};
+	// Display Assignments:
+	assign VGA_R = {8{r}};
+	assign VGA_G = {8{g}};
+	assign VGA_B = {8{b}};
 	
 	// RACING GAME END 
 	
-	// create VGA sync generator
-	wire display_on;
-	wire [9:0] hpos, vpos;
-	vga640x480_sync_gen video_gen(
-		.clk(clk),
-		.reset(0),
-		.hsync(VGA_HS),
-		.vsync(VGA_VS),
-		.display_on(display_on),
-		.hpos(hpos),
-		.vpos(vpos)
-	);
-	
+	// Misc. assignments:
 	assign VGA_CLK = clk;              // clock DAC
 	assign VGA_BLANK_n = display_on;   // enable DAC output
 	assign VGA_SYNC_n  = (VGA_VS || VGA_HS);         // turn off "green" mode
 	
-	// Use switches to determine direction
-	// Use key to determine whether or not to move
-	wire hpaddle, vpaddle, h_dir, v_dir;
-	
-	assign h_dir = SW[3];
-	assign v_dir = SW[0];
-	assign hpaddle = ~KEY[3];
-	assign vpaddle = ~KEY[0];
-	
-	// player position
-	reg [9:0] player_x;
-	reg [9:0] player_y;
-	
-	// paddle position
-	reg [9:0] paddle_x;
-	reg [9:0] paddle_y;
-	
-	// car bitmap ROM and associated wires
-	wire [3:0] car_sprite_addr;
-	wire [7:0] car_sprite_bits;
-	
-	car_bitmap car(
-		.yofs(car_sprite_addr), 
-		.bits(car_sprite_bits));
-	
-	 // convert player X/Y to 9 bits and compare to CRT hpos/vpos
-	wire vstart = {1'b0,player_y} == vpos;
-	wire hstart = {1'b0,player_x} == hpos;
-	
-	wire car_gfx;		// car sprite video signal
-	wire in_progress;	// 1 = rendering taking place on scanline
-
-	// sprite renderer module
-	sprite_renderer renderer(
-		.clk(clk),
-		.vstart(vstart),
-		.load(VGA_HS),
-		.hstart(hstart),
-		.rom_addr(car_sprite_addr),
-		.rom_bits(car_sprite_bits),
-		.gfx(car_gfx),
-		.in_progress(in_progress));
-	
-// Update Paddle locations:
-	always @(posedge VGA_VS)
-		begin
-			if (hpaddle) begin
-				if (h_dir)
-					paddle_x <= paddle_x + 2;
-				else
-					paddle_x <= paddle_x - 2;
-			end
-			if (vpaddle) begin
-				if (v_dir)
-					paddle_y <= paddle_y + 2;
-				else
-					paddle_y <= paddle_y - 2;
-			end
-			// See if paddle exceeds bounds:
-			if (paddle_x < 0)
-				paddle_x <= 0;
-			if (paddle_x > 640)
-				paddle_x <= 640;
-			if (paddle_y < 0)
-				paddle_y <= 0;
-			if (paddle_y > 480)
-				paddle_y <= 480;
-		end
-		
-	// Update player location
-	always @(posedge VGA_VS)
-		begin
-			player_x <= paddle_x;
-			player_y <= paddle_y;
-		end
-		
-	// video RGB output
-	wire r = display_on && car_gfx;
-	wire g = display_on && car_gfx;
-	wire b = display_on && in_progress;
-	
-	// I/O and Display Assignments:
-	assign VGA_R = {8{r}};
-	assign VGA_G = {8{g}};
-	assign VGA_B = {8{b}};
 	
 endmodule
 
