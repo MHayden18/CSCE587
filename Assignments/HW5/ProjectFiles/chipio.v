@@ -198,6 +198,8 @@ module chipio(
 	//assign hpaddle = ~KEY[0];
 	wire move_right = ~KEY[3];
 	wire move_left = ~KEY[0];
+	wire move_dir = SW[0];
+	
 	always @(posedge VGA_VS)
 		if (move_right)	// If I want to move, move based on direction
 			reg_PLAYER_X <= reg_PLAYER_X + 2;
