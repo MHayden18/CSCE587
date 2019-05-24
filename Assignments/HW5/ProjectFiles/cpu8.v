@@ -27,7 +27,7 @@ module ALU(A, B, carry, aluop, Y);
   input  [N-1:0] B;	// B input
   input  carry;		// carry input
   input  [3:0] aluop;	// alu operation
-  output [N:0] Y;	// Y output + carry
+  output reg [N:0] Y;	// Y output + carry
   
   always @(*)
     case (aluop)
@@ -100,15 +100,16 @@ module CPU(clk, reset, address, data_in, data_out, write);
 
   input        clk;
   input        reset;
-  output [7:0] address;
+  output reg [7:0] address;
   input  [7:0] data_in;
-  output [7:0] data_out;
-  output       write;
+  output reg [7:0] data_out;
+  output reg   write;
   
   reg [7:0] IP;
   reg [7:0] A, B;
-  reg [8:0] Y;
+  wire [8:0] Y;
   reg [2:0] state;
+  wire [7:0] y; 
   
   reg carry;
   reg zero;
@@ -224,10 +225,10 @@ module CPU(clk, reset, address, data_in, data_out, write);
           state <= S_SELECT;
         end
       endcase
-    end
-
+    end 
+	
 endmodule
-
+/*
 `ifdef TOPMOD__test_CPU_top
 
 module test_CPU_top(
@@ -298,5 +299,5 @@ Loop:
 endmodule
 
 `endif
-
+*/
 `endif
